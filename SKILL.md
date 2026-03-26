@@ -4,6 +4,7 @@ description: Manage skills on localskills.sh - list, view details, delete, updat
 version: 1.0.0
 author: dt418
 license: MIT
+source: https://github.com/dt418/localskills-manager
 tags:
   - localskills
   - delete
