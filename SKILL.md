@@ -1,12 +1,13 @@
 ---
-name: localskills-delete
-description: Delete a skill from localskills.sh using API. Use when user asks to delete a skill, remove skill, or uninstall skill from localskills.
+name: localskills-manager
+description: Manage skills on localskills.sh - list, view details, delete, update versions. Use when user asks to delete a skill, remove skill, list skills, or manage localskills.
 version: 1.0.0
 author: dt418
 license: MIT
 tags:
   - localskills
   - delete
+  - manage
   - skill
 platforms:
   - opencode
@@ -17,103 +18,142 @@ platforms:
   - copilot
 tools:
   - Bash
+  - Read
 ---
 
-# Localskills Delete Skill
+# Localskills Manager
 
-Delete a skill from localskills.sh using the API.
+Manage skills on localskills.sh using the REST API.
 
 ## Prerequisites
 
-1. Login to localskills:
-```bash
-npx @localskills/cli login
-```
-
-2. Get API token from config:
-```bash
-cat ~/.config/localskills/config.json
-```
-Copy the `token` value from the profile.
-
-## Workflow
-
-### 1. Get User Input
-
-Ask user for:
-- **Skill ID** (required): The internal ID of the skill to delete (format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
-- Or **Public ID** (optional): The public slug/ID like `M4DUKjLOkn`
-
-### 2. Get API Token
+### Get API Token
 
 ```bash
 cat ~/.config/localskills/config.json
 ```
 
-Extract the token from `profiles.default.token`.
+Copy the token from `profiles.default.token`.
 
-### 3. Find Skill ID (if only Public ID provided)
+## Workflows
 
-If user only provides public ID (like `M4DUKjLOkn`), first find the internal ID:
+### 1. List All Your Skills
 
 ```bash
 curl -s "https://localskills.sh/api/skills" \
-  -H "Authorization: Bearer $TOKEN" | jq '.data[] | select(.publicId=="PUBLIC_ID") | .id'
+  -H "Authorization: Bearer $TOKEN" | jq '.data[] | {name, slug, publicId, id, visibility, currentVersion}'
 ```
 
-### 4. Delete the Skill
+### 2. Get Skill Details
 
 ```bash
-# Using internal ID
-curl -s -X DELETE "https://localskills.sh/api/skills/SKILL_ID" \
+# By internal ID
+curl -s "https://localskills.sh/api/skills/ID" \
+  -H "Authorization: Bearer $TOKEN"
+
+# By public ID
+curl -s "https://localskills.sh/api/skills/public/PUBLIC_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 3. Delete a Skill
+
+```bash
+# Using internal ID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+curl -s -X DELETE "https://localskills.sh/api/skills/INTERNAL_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response:** `{"success":true}`
+
+### 4. Update Skill (Publish New Version)
+
+```bash
+curl -s -X PUT "https://localskills.sh/api/skills/INTERNAL_ID/versions" \
   -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json"
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "MD file content here",
+    "message": "Version update message"
+  }'
 ```
 
-### 5. Confirm Deletion
+### 5. Get Skill Versions
 
-If successful, the response will be:
-```json
-{"success":true}
+```bash
+curl -s "https://localskills.sh/api/skills/INTERNAL_ID/versions" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-## Example
+### 6. Get Skill Analytics
+
+```bash
+curl -s "https://localskills.sh/api/skills/INTERNAL_ID/analytics" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## User Input Required
+
+Ask user for:
+1. **API Token** - From `~/.config/localskills/config.json`
+2. **Action** - list, view, delete, update
+3. **Skill ID** - Internal ID or public ID
+
+## Example: Delete Skill
 
 User wants to delete skill with public ID `M4DUKjLOkn`:
 
 ```bash
-# Step 1: Get token
 TOKEN="lsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# Step 2: Find internal ID
+# Step 1: Find internal ID
 curl -s "https://localskills.sh/api/skills" \
-  -H "Authorization: Bearer $TOKEN" | jq '.data[] | select(.publicId=="M4DUKjLOkn")'
-# Output: {"id":"df7b485a-225d-436c-b218-5c0fc928205c","publicId":"M4DUKjLOkn",...}
+  -H "Authorization: Bearer $TOKEN" | jq '.data[] | select(.publicId=="M4DUKjLOkn") | {id, name, publicId}'
+# Output: {"id":"df7b485a-225d-436c-b218-5c0fc928205c","name":"9router-docker-smoke-test","publicId":"M4DUKjLOkn"}
 
-# Step 3: Delete
+# Step 2: Delete
 curl -s -X DELETE "https://localskills.sh/api/skills/df7b485a-225d-436c-b218-5c0fc928205c" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json"
+  -H "Authorization: Bearer $TOKEN"
 # Output: {"success":true}
 ```
 
-## List All Your Skills
+## API Endpoints Summary
 
-To see all your skills with their IDs:
-
-```bash
-curl -s "https://localskills.sh/api/skills" \
-  -H "Authorization: Bearer $TOKEN" | jq '.data[] | {id: .id, publicId: .publicId, name: .name, slug: .slug}'
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/skills` | List all skills |
+| GET | `/api/skills/:id` | Get skill by internal ID |
+| GET | `/api/skills/public/:publicId` | Get skill by public ID |
+| POST | `/api/skills` | Create new skill |
+| PUT | `/api/skills/:id` | Update skill metadata |
+| DELETE | `/api/skills/:id` | Delete skill |
+| GET | `/api/skills/:id/versions` | List skill versions |
+| POST | `/api/skills/:id/versions` | Add new version |
+| GET | `/api/skills/:id/analytics` | Get skill analytics |
 
 ## Error Handling
 
-- **401 Unauthorized**: Token is invalid or expired. Re-run `localskills login`
-- **404 Not Found**: Skill ID is incorrect
-- **403 Forbidden**: You don't own this skill
+| Status | Meaning | Solution |
+|--------|---------|----------|
+| 401 | Token invalid/expired | Re-run `localskills login` |
+| 403 | Not owner of skill | Cannot modify others' skills |
+| 404 | Skill not found | Check skill ID |
+| 429 | Rate limited | Wait and retry |
 
-## Notes
+## Quick Reference
 
-- Only skills you own can be deleted
-- Deleted skills cannot be recovered
-- The public ID (slug) is different from the internal ID
+```bash
+# Variables
+TOKEN="lsk_your_token_here"
+INTERNAL_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+PUBLIC_ID="M4DUKjLOkn"
+
+# List skills
+curl -s "https://localskills.sh/api/skills" -H "Authorization: Bearer $TOKEN"
+
+# Delete skill
+curl -s -X DELETE "https://localskills.sh/api/skills/$INTERNAL_ID" -H "Authorization: Bearer $TOKEN"
+
+# Get single skill
+curl -s "https://localskills.sh/api/skills/$INTERNAL_ID" -H "Authorization: Bearer $TOKEN"
+```
