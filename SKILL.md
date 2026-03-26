@@ -79,7 +79,7 @@ Use natural language or commands:
 
 ### API Token (Automatic)
 ```bash
-# Reads from ~/.config/localskills/config.json
+# Reads from ~/.localskills/config.json
 # Profile: profiles.default.token
 ```
 
@@ -87,7 +87,7 @@ Use natural language or commands:
 If token not found, ask user:
 ```
 Please provide your localskills API token:
-1. Run: cat ~/.config/localskills/config.json
+1. Run: cat ~/.localskills/config.json
 2. Copy the token from profiles.default.token
 3. Paste it here
 ```
@@ -98,7 +98,7 @@ Please provide your localskills API token:
 
 **Auto-detect:**
 ```bash
-TOKEN=$(cat ~/.config/localskills/config.json | jq -r '.profiles.default.token')
+TOKEN=$(cat ~/.localskills/config.json | jq -r '.profiles.default.token')
 ```
 
 **If not found, ask user for token**
@@ -176,7 +176,7 @@ curl -s "https://localskills.sh/api/skills/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/
 
 | Error | Solution |
 |-------|----------|
-| Token not found | Run `cat ~/.config/localskills/config.json` |
+| Token not found | Run `cat ~/.localskills/config.json` |
 | 401 Unauthorized | Re-run `npx @localskills/cli login` |
 | 404 Not Found | Check skill ID/slug is correct |
 | 403 Forbidden | You don't own this skill |
