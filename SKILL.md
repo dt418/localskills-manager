@@ -31,7 +31,7 @@ Manage skills on localskills.sh using the REST API. Supports auto-configuration 
 ### Automatic (Recommended)
 
 The skill will automatically:
-1. Read token from `~/.config/localskills/config.json`
+1. Read token from `~/.localskills/config.json`
 2. List all your skills
 3. Allow actions via natural language
 
